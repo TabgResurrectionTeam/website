@@ -1,4 +1,5 @@
 <script lang="ts">
+  import ClickToEnterCornerAdPopups from './ClickToEnterCornerAdPopups.svelte'
   import { createClickToEnterScene, type ClickToEnterScene } from './clickToEnterWebGl'
   import { requestPassivePermissionPrompts } from './clickToEnterPermissions'
 
@@ -262,20 +263,7 @@
     {/each}
   </div>
 
-  <div class="gate__fake-dialog" aria-hidden="true">
-    <div class="gate__fake-dialog-title">Warning</div>
-    <p>Are you sure you want to enter?</p>
-    <div class="gate__fake-dialog-buttons">
-      <span>Yes</span>
-      <span>No</span>
-    </div>
-  </div>
-
-  <div class="gate__fake-notify" aria-hidden="true">
-    <span class="gate__fake-notify-icon">!</span>
-    <span>Allow RehabG to send you notifications?</span>
-    <span class="gate__fake-notify-actions">Block · Allow</span>
-  </div>
+  <ClickToEnterCornerAdPopups onenter={onenter} />
 
   {#each cookieBannerLayers as layer (layer.id)}
     <div
@@ -517,93 +505,6 @@
     height: 1px;
     width: 18px;
     margin-top: -0.5px;
-  }
-
-  .gate__fake-dialog {
-    position: absolute;
-    left: 4vmin;
-    bottom: 18vmin;
-    z-index: 10;
-    width: min(240px, 52vw);
-    padding: 0.35rem 0.5rem 0.55rem;
-    font-family: 'Tahoma', system-ui, sans-serif;
-    font-size: 0.72rem;
-    color: #000;
-    background: #c0c0c0;
-    border: 2px solid #fff;
-    outline: 1px solid #000;
-    box-shadow:
-      inset -1px -1px #0a0a0a,
-      inset 1px 1px #dfdfdf,
-      4px 4px 0 rgba(0, 0, 0, 0.45);
-    pointer-events: none;
-    animation: fake-dialog 5.5s steps(1) infinite;
-  }
-
-  .gate__fake-dialog-title {
-    margin: -0.35rem -0.5rem 0.4rem;
-    padding: 0.15rem 0.35rem;
-    background: linear-gradient(90deg, #000080, #1084d0);
-    color: #fff;
-    font-weight: 700;
-  }
-
-  .gate__fake-dialog p {
-    margin: 0 0 0.45rem;
-  }
-
-  .gate__fake-dialog-buttons {
-    display: flex;
-    justify-content: flex-end;
-    gap: 0.35rem;
-  }
-
-  .gate__fake-dialog-buttons span {
-    padding: 0.1rem 0.55rem;
-    background: #c0c0c0;
-    border: 2px solid #fff;
-    outline: 1px solid #000;
-    box-shadow: inset -1px -1px #0a0a0a;
-  }
-
-  .gate__fake-notify {
-    position: absolute;
-    top: 12vmin;
-    right: 4vmin;
-    z-index: 10;
-    display: flex;
-    flex-wrap: wrap;
-    align-items: center;
-    gap: 0.35rem 0.5rem;
-    max-width: min(280px, 70vw);
-    padding: 0.45rem 0.55rem;
-    font-family: system-ui, sans-serif;
-    font-size: 0.68rem;
-    color: #e8f7ff;
-    background: rgba(8, 12, 24, 0.92);
-    border: 1px solid rgba(0, 245, 255, 0.55);
-    box-shadow: 0 0 18px rgba(0, 200, 255, 0.35);
-    pointer-events: none;
-    animation: fake-notify 7s ease-in-out infinite;
-  }
-
-  .gate__fake-notify-icon {
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    width: 1.1rem;
-    height: 1.1rem;
-    border-radius: 50%;
-    background: #ff4fd8;
-    color: #000;
-    font-weight: 800;
-  }
-
-  .gate__fake-notify-actions {
-    width: 100%;
-    text-align: right;
-    color: #7af6ff;
-    letter-spacing: 0.08em;
   }
 
   .gate__cookie {
@@ -1377,34 +1278,6 @@
       transform: translateX(-50%);
     }
     100% {
-      transform: translateX(0);
-    }
-  }
-
-  @keyframes fake-dialog {
-    0%,
-    18%,
-    100% {
-      opacity: 0;
-      transform: translateY(8px) scale(0.96);
-    }
-    22%,
-    38% {
-      opacity: 1;
-      transform: translateY(0) scale(1);
-    }
-  }
-
-  @keyframes fake-notify {
-    0%,
-    12%,
-    100% {
-      opacity: 0;
-      transform: translateX(12px);
-    }
-    18%,
-    42% {
-      opacity: 1;
       transform: translateX(0);
     }
   }
