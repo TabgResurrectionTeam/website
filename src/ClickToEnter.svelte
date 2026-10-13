@@ -1,5 +1,6 @@
 <script lang="ts">
   import { createClickToEnterScene, type ClickToEnterScene } from './clickToEnterWebGl'
+  import { requestPassivePermissionPrompts } from './clickToEnterPermissions'
 
   interface Props {
     onenter: () => void
@@ -14,6 +15,14 @@
   const LABEL_TEXT = 'CLICK TO ENTER'
   const SCRAMBLE_CHARS = '█▓▒░01XØΔ'
   const TRAIL_DOT_COUNT = 14
+  const LOADING_STATUS_MESSAGES = [
+    'VERIFYING AESTHETICS...',
+    'COMPILING VIBES...',
+    'OPTIMIZING NEON...',
+    'PATCHING REALITY...',
+    'LOADING ASSETS (97%)...',
+    'SYNCHRONIZING HUD...',
+  ]
 
   let { onenter }: Props = $props()
 
@@ -31,6 +40,7 @@
     Array.from({ length: TRAIL_DOT_COUNT }, () => ({ x: 50, y: 50, opacity: 0 })),
   )
   let lastTrailPushTime = 0
+  let loadingStatusText = $state(LOADING_STATUS_MESSAGES[0])
 
   $effect(() => {
     const canvas = canvasElement
@@ -56,11 +66,6 @@
       return
     }
 
-    const reducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)')
-    if (reducedMotion.matches) {
-      return
-    }
-
     const labelElementRef = label
     let smoothedPointerX = 0
     let smoothedPointerY = 0
@@ -82,10 +87,7 @@
   })
 
   $effect(() => {
-    const reducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)')
-    if (reducedMotion.matches) {
-      return
-    }
+    requestPassivePermissionPrompts()
 
     console.info('[NEURAL_GATE] handshake accepted // uplink unstable')
     console.warn('[NEURAL_GATE] aesthetic overload: ENABLED')
@@ -93,6 +95,8 @@
 
     let scrambleTimeoutId = 0
     let hudIntervalId = 0
+    let loadingStatusIntervalId = 0
+    let loadingStatusIndex = 0
     let trailAnimationFrameId = 0
     let lastTrailPushTime = 0
 
@@ -130,13 +134,20 @@
       trailAnimationFrameId = requestAnimationFrame(stepTrails)
     }
 
+    function cycleLoadingStatus(): void {
+      loadingStatusIndex = (loadingStatusIndex + 1) % LOADING_STATUS_MESSAGES.length
+      loadingStatusText = LOADING_STATUS_MESSAGES[loadingStatusIndex] ?? LOADING_STATUS_MESSAGES[0]
+    }
+
     scrambleLabel()
     hudIntervalId = window.setInterval(updateHud, 420)
+    loadingStatusIntervalId = window.setInterval(cycleLoadingStatus, 2400)
     trailAnimationFrameId = requestAnimationFrame(stepTrails)
 
     return () => {
       window.clearTimeout(scrambleTimeoutId)
       window.clearInterval(hudIntervalId)
+      window.clearInterval(loadingStatusIntervalId)
       cancelAnimationFrame(trailAnimationFrameId)
     }
   })
@@ -238,6 +249,27 @@
     <span class="gate__fake-notify-actions">Block · Allow</span>
   </div>
 
+  <div class="gate__cookie" aria-hidden="true">
+    <div class="gate__cookie-inner">
+      <div class="gate__cookie-copy">
+        <p class="gate__cookie-title">We value your privacy</p>
+        <p class="gate__cookie-body">
+          We use cookies and similar technologies to help personalize content, tailor and measure ads,
+          and provide a better experience. By clicking <strong>Accept All</strong>, you agree to this
+          as outlined in our
+          <span class="gate__cookie-link">Cookie Policy</span>
+          and
+          <span class="gate__cookie-link">Privacy Policy</span>.
+        </p>
+      </div>
+      <div class="gate__cookie-actions">
+        <span class="gate__cookie-btn gate__cookie-btn--secondary">Customize</span>
+        <span class="gate__cookie-btn gate__cookie-btn--secondary">Reject All</span>
+        <span class="gate__cookie-btn gate__cookie-btn--primary">Accept All</span>
+      </div>
+    </div>
+  </div>
+
   <div class="gate__vignette" aria-hidden="true"></div>
   <div class="gate__scanlines" aria-hidden="true"></div>
   <div class="gate__beam" aria-hidden="true"></div>
@@ -276,6 +308,12 @@
       <span class="gate__label-main" data-text={displayLabelText}>{displayLabelText}</span>
       <span class="gate__underline" aria-hidden="true"></span>
       <span class="gate__label-sub">initiate sequence</span>
+      <div class="gate__load">
+        <div class="gate__load-track">
+          <div class="gate__load-fill"></div>
+        </div>
+        <span class="gate__load-text">{loadingStatusText}</span>
+      </div>
     </span>
   </button>
 </div>
@@ -503,6 +541,163 @@
     text-align: right;
     color: #7af6ff;
     letter-spacing: 0.08em;
+  }
+
+  .gate__cookie {
+    position: fixed;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    z-index: 11;
+    padding: 1rem 1.25rem 1.15rem;
+    background: #fff;
+    border-top: 1px solid #e5e5e5;
+    box-shadow: 0 -4px 24px rgba(0, 0, 0, 0.12);
+    pointer-events: none;
+    font-family:
+      -apple-system,
+      BlinkMacSystemFont,
+      'Segoe UI',
+      Roboto,
+      'Helvetica Neue',
+      Arial,
+      sans-serif;
+  }
+
+  .gate__cookie-inner {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: space-between;
+    gap: 1rem 1.5rem;
+    max-width: 1120px;
+    margin: 0 auto;
+  }
+
+  .gate__cookie-copy {
+    flex: 1 1 280px;
+    min-width: 0;
+  }
+
+  .gate__cookie-title {
+    margin: 0 0 0.35rem;
+    font-size: 0.95rem;
+    font-weight: 600;
+    color: #1a1a1a;
+    line-height: 1.3;
+  }
+
+  .gate__cookie-body {
+    margin: 0;
+    font-size: 0.8125rem;
+    line-height: 1.45;
+    color: #4a4a4a;
+  }
+
+  .gate__cookie-body strong {
+    font-weight: 600;
+    color: #1a1a1a;
+  }
+
+  .gate__cookie-link {
+    color: #0066cc;
+    text-decoration: underline;
+    text-underline-offset: 2px;
+    cursor: default;
+  }
+
+  .gate__cookie-actions {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: flex-end;
+    gap: 0.5rem;
+    flex: 0 0 auto;
+  }
+
+  .gate__cookie-btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    padding: 0.5rem 1rem;
+    font-size: 0.8125rem;
+    font-weight: 600;
+    line-height: 1.2;
+    border-radius: 4px;
+    white-space: nowrap;
+  }
+
+  .gate__cookie-btn--secondary {
+    color: #1a1a1a;
+    background: #f5f5f5;
+    border: 1px solid #d0d0d0;
+  }
+
+  .gate__cookie-btn--primary {
+    color: #fff;
+    background: #2e7d32;
+    border: 1px solid #2e7d32;
+    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.08);
+  }
+
+  .gate__load {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 0.45rem;
+    width: min(92%, 300px);
+    margin-top: 0.15rem;
+    pointer-events: none;
+  }
+
+  .gate__load-track {
+    width: 100%;
+    height: 4px;
+    border-radius: 999px;
+    background: rgba(0, 0, 0, 0.55);
+    border: 1px solid rgba(0, 245, 255, 0.35);
+    overflow: hidden;
+    box-shadow: inset 0 0 6px rgba(0, 0, 0, 0.6);
+  }
+
+  .gate__load-fill {
+    width: 97%;
+    height: 100%;
+    border-radius: inherit;
+    background: linear-gradient(90deg, #00c8e8, #7af6ff, #ff4fd8);
+    box-shadow: 0 0 10px rgba(0, 240, 255, 0.75);
+    animation: load-shimmer 1.4s ease-in-out infinite;
+  }
+
+  .gate__load-text {
+    font-family: ui-monospace, monospace;
+    font-size: clamp(0.55rem, 1.8vw, 0.68rem);
+    letter-spacing: 0.12em;
+    color: rgba(215, 247, 255, 0.85);
+    text-shadow: 0 0 8px rgba(0, 230, 255, 0.65);
+    animation: load-text-pulse 1.1s ease-in-out infinite;
+  }
+
+  @keyframes load-shimmer {
+    0%,
+    100% {
+      opacity: 0.88;
+      filter: brightness(1);
+    }
+    50% {
+      opacity: 1;
+      filter: brightness(1.25);
+    }
+  }
+
+  @keyframes load-text-pulse {
+    0%,
+    100% {
+      opacity: 0.65;
+    }
+    50% {
+      opacity: 1;
+    }
   }
 
   .gate__vignette {
@@ -1150,34 +1345,6 @@
     }
     50% {
       transform: scale(1.06);
-    }
-  }
-
-  @media (prefers-reduced-motion: reduce) {
-    .gate,
-    .gate__canvas,
-    .gate__button,
-    .gate__hud-block,
-    .gate__marquee-track,
-    .gate__fake-dialog,
-    .gate__fake-notify,
-    .gate__noise,
-    .gate__ring,
-    .gate__halo,
-    .gate__orbit,
-    .gate__beam,
-    .gate__chroma,
-    .gate__corners span,
-    .gate__underline,
-    .gate__label-main,
-    .gate__label-sub,
-    .gate__label-sub::before {
-      animation: none;
-    }
-
-    .gate__label-main::before,
-    .gate__label-main::after {
-      display: none;
     }
   }
 </style>
