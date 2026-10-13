@@ -19,7 +19,6 @@
 
   let { onenter }: Props = $props()
 
-  const MAX_VISIBLE_ADS = 6
   const INITIAL_DELAY_MS = 1400
   const SPAWN_INTERVAL_MIN_MS = 3200
   const SPAWN_INTERVAL_MAX_MS = 6200
@@ -29,10 +28,6 @@
   let spawnGeneration = 0
 
   async function spawnPopup(): Promise<void> {
-    if (popups.length >= MAX_VISIBLE_ADS) {
-      return
-    }
-
     const imageUrl = pickRandomAdPopupImageUrl(CLICK_TO_ENTER_AD_POPUP_IMAGE_URLS)
     if (imageUrl === null) {
       return
@@ -83,9 +78,7 @@
         Math.floor(Math.random() * (SPAWN_INTERVAL_MAX_MS - SPAWN_INTERVAL_MIN_MS))
       const timeoutId = window.setTimeout(() => {
         void spawnPopup().finally(() => {
-          if (popups.length < MAX_VISIBLE_ADS) {
-            scheduleNextSpawn()
-          }
+          scheduleNextSpawn()
         })
       }, delay)
       scheduledTimeoutIds.push(timeoutId)
