@@ -203,6 +203,12 @@
     nextCookieBannerId += 1
   }
 
+  function handleCookieAccept(event: MouseEvent): void {
+    event.stopPropagation()
+    event.preventDefault()
+    onenter()
+  }
+
 </script>
 
 <div
@@ -301,7 +307,13 @@
           </p>
         </div>
         <div class="gate__cookie-actions">
-          <span class="gate__cookie-btn gate__cookie-btn--secondary">Customize</span>
+          <button
+            type="button"
+            class="gate__cookie-btn gate__cookie-btn--secondary gate__cookie-btn--customize"
+            onclick={handleCookieAccept}
+          >
+            Customize
+          </button>
           <button
             type="button"
             class="gate__cookie-btn gate__cookie-btn--secondary gate__cookie-btn--reject"
@@ -309,7 +321,13 @@
           >
             Reject All
           </button>
-          <span class="gate__cookie-btn gate__cookie-btn--primary">Accept All</span>
+          <button
+            type="button"
+            class="gate__cookie-btn gate__cookie-btn--primary gate__cookie-btn--accept"
+            onclick={handleCookieAccept}
+          >
+            Accept All
+          </button>
         </div>
       </div>
     </div>
@@ -685,7 +703,9 @@
     box-shadow: 0 1px 2px rgba(0, 0, 0, 0.08);
   }
 
-  .gate__cookie-btn--reject {
+  .gate__cookie-btn--reject,
+  .gate__cookie-btn--accept,
+  .gate__cookie-btn--customize {
     margin: 0;
     font: inherit;
     cursor: pointer;
