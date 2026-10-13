@@ -5,6 +5,16 @@
     onenter: () => void
   }
 
+  interface CursorTrailDot {
+    x: number
+    y: number
+    opacity: number
+  }
+
+  const LABEL_TEXT = 'CLICK TO ENTER'
+  const SCRAMBLE_CHARS = '█▓▒░01XØΔ'
+  const TRAIL_DOT_COUNT = 14
+
   let { onenter }: Props = $props()
 
   let canvasElement: HTMLCanvasElement | null = $state(null)
@@ -12,6 +22,15 @@
   let scene: ClickToEnterScene | null = null
   let targetPointerX = 0
   let targetPointerY = 0
+  let displayLabelText = $state(LABEL_TEXT)
+  let hudFps = $state(60)
+  let hudRam = $state(8192)
+  let hudLink = $state(99.7)
+  let hudPackets = $state(0)
+  let cursorTrailDots: CursorTrailDot[] = $state(
+    Array.from({ length: TRAIL_DOT_COUNT }, () => ({ x: 50, y: 50, opacity: 0 })),
+  )
+  let lastTrailPushTime = 0
 
   $effect(() => {
     const canvas = canvasElement
@@ -42,6 +61,7 @@
       return
     }
 
+    const labelElementRef = label
     let smoothedPointerX = 0
     let smoothedPointerY = 0
     let animationFrameId = 0
@@ -49,8 +69,8 @@
     function step(): void {
       smoothedPointerX += (targetPointerX - smoothedPointerX) * 0.16
       smoothedPointerY += (targetPointerY - smoothedPointerY) * 0.16
-      label.style.setProperty('--pointer-x', smoothedPointerX.toFixed(4))
-      label.style.setProperty('--pointer-y', smoothedPointerY.toFixed(4))
+      labelElementRef.style.setProperty('--pointer-x', smoothedPointerX.toFixed(4))
+      labelElementRef.style.setProperty('--pointer-y', smoothedPointerY.toFixed(4))
       animationFrameId = requestAnimationFrame(step)
     }
 
@@ -61,6 +81,78 @@
     }
   })
 
+  $effect(() => {
+    const reducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)')
+    if (reducedMotion.matches) {
+      return
+    }
+
+    console.info('[NEURAL_GATE] handshake accepted // uplink unstable')
+    console.warn('[NEURAL_GATE] aesthetic overload: ENABLED')
+    console.debug('[NEURAL_GATE] click_to_enter.exe has not been validated by any authority')
+
+    let scrambleTimeoutId = 0
+    let hudIntervalId = 0
+    let trailAnimationFrameId = 0
+    let lastTrailPushTime = 0
+
+    function scrambleLabel(): void {
+      const characters = LABEL_TEXT.split('')
+      for (let index = 0; index < characters.length; index += 1) {
+        if (characters[index] === ' ') {
+          continue
+        }
+        if (Math.random() < 0.38) {
+          const randomIndex = Math.floor(Math.random() * SCRAMBLE_CHARS.length)
+          characters[index] = SCRAMBLE_CHARS[randomIndex] ?? '█'
+        }
+      }
+      displayLabelText = characters.join('')
+      window.setTimeout(() => {
+        displayLabelText = LABEL_TEXT
+      }, 140)
+      scrambleTimeoutId = window.setTimeout(scrambleLabel, 2200 + Math.random() * 1800)
+    }
+
+    function updateHud(): void {
+      hudFps = 24 + Math.floor(Math.random() * 72)
+      hudRam = 4096 + Math.floor(Math.random() * 12000)
+      hudLink = 62 + Math.random() * 38
+      hudPackets += 17 + Math.floor(Math.random() * 240)
+    }
+
+    function stepTrails(): void {
+      cursorTrailDots = cursorTrailDots.map((dot) => ({
+        x: dot.x,
+        y: dot.y,
+        opacity: Math.max(0, dot.opacity - 0.045),
+      }))
+      trailAnimationFrameId = requestAnimationFrame(stepTrails)
+    }
+
+    scrambleLabel()
+    hudIntervalId = window.setInterval(updateHud, 420)
+    trailAnimationFrameId = requestAnimationFrame(stepTrails)
+
+    return () => {
+      window.clearTimeout(scrambleTimeoutId)
+      window.clearInterval(hudIntervalId)
+      cancelAnimationFrame(trailAnimationFrameId)
+    }
+  })
+
+  function pushCursorTrail(clientX: number, clientY: number, rect: DOMRect): void {
+    const now = performance.now()
+    if (now - lastTrailPushTime < 28) {
+      return
+    }
+    lastTrailPushTime = now
+    const xPercent = ((clientX - rect.left) / rect.width) * 100
+    const yPercent = ((clientY - rect.top) / rect.height) * 100
+    const shifted = [...cursorTrailDots.slice(1), { x: xPercent, y: yPercent, opacity: 0.92 }]
+    cursorTrailDots = shifted
+  }
+
   function handlePointerMove(event: PointerEvent): void {
     const target = event.currentTarget as HTMLElement
     const rect = target.getBoundingClientRect()
@@ -68,6 +160,7 @@
     const normalizedY = (event.clientY - rect.top) / rect.height
     targetPointerX = normalizedX * 2 - 1
     targetPointerY = normalizedY * 2 - 1
+    pushCursorTrail(event.clientX, event.clientY, rect)
     scene?.setPointer(normalizedX, 1 - normalizedY)
   }
 
@@ -86,6 +179,64 @@
   onpointerleave={handlePointerLeave}
 >
   <canvas class="gate__canvas" bind:this={canvasElement} aria-hidden="true"></canvas>
+
+  <div class="gate__hud" aria-hidden="true">
+    <div class="gate__hud-block gate__hud-block--tl">
+      <span>NEURAL_LINK {hudLink.toFixed(1)}%</span>
+      <span>FPS {hudFps}</span>
+      <span>PKT {hudPackets}</span>
+    </div>
+    <div class="gate__hud-block gate__hud-block--tr">
+      <span>RAM {hudRam}MB</span>
+      <span>SIG LOST?</span>
+      <span>NO</span>
+    </div>
+    <div class="gate__hud-block gate__hud-block--bl">
+      <span>▌AESTHETIC_CORE</span>
+      <span>OVERCLOCK</span>
+    </div>
+    <div class="gate__hud-block gate__hud-block--br">
+      <span>v0.∞.chaos</span>
+      <span>DO NOT PANIC</span>
+    </div>
+  </div>
+
+  <div class="gate__marquee" aria-hidden="true">
+    <div class="gate__marquee-track gate__marquee-track--forward">
+      <span>CLICK TO ENTER · CLICK TO ENTER · CLICK TO ENTER · </span>
+      <span>CLICK TO ENTER · CLICK TO ENTER · CLICK TO ENTER · </span>
+    </div>
+    <div class="gate__marquee-track gate__marquee-track--reverse">
+      <span>INITIATE SEQUENCE · INITIATE SEQUENCE · </span>
+      <span>INITIATE SEQUENCE · INITIATE SEQUENCE · </span>
+    </div>
+  </div>
+
+  <div class="gate__trails" aria-hidden="true">
+    {#each cursorTrailDots as trailDot, trailIndex (trailIndex)}
+      <span
+        class="gate__trail-dot"
+        style:left="{trailDot.x}%"
+        style:top="{trailDot.y}%"
+        style:opacity={trailDot.opacity}
+      ></span>
+    {/each}
+  </div>
+
+  <div class="gate__fake-dialog" aria-hidden="true">
+    <div class="gate__fake-dialog-title">Warning</div>
+    <p>Are you sure you want to enter?</p>
+    <div class="gate__fake-dialog-buttons">
+      <span>Yes</span>
+      <span>No</span>
+    </div>
+  </div>
+
+  <div class="gate__fake-notify" aria-hidden="true">
+    <span class="gate__fake-notify-icon">!</span>
+    <span>Allow RehabG to send you notifications?</span>
+    <span class="gate__fake-notify-actions">Block · Allow</span>
+  </div>
 
   <div class="gate__vignette" aria-hidden="true"></div>
   <div class="gate__scanlines" aria-hidden="true"></div>
@@ -109,6 +260,7 @@
     <span class="gate__ring gate__ring--outer" aria-hidden="true"></span>
     <span class="gate__ring gate__ring--spin" aria-hidden="true"></span>
     <span class="gate__ring gate__ring--inner" aria-hidden="true"></span>
+    <span class="gate__ring gate__ring--hyper" aria-hidden="true"></span>
     <span class="gate__orbit" aria-hidden="true">
       <span></span>
       <span></span>
@@ -121,7 +273,7 @@
       <span></span>
     </span>
     <span class="gate__label" bind:this={labelElement}>
-      <span class="gate__label-main" data-text="CLICK TO ENTER">CLICK TO ENTER</span>
+      <span class="gate__label-main" data-text={displayLabelText}>{displayLabelText}</span>
       <span class="gate__underline" aria-hidden="true"></span>
       <span class="gate__label-sub">initiate sequence</span>
     </span>
@@ -136,6 +288,7 @@
     overflow: hidden;
     background: #000;
     cursor: crosshair;
+    animation: gate-shake 3.2s steps(2) infinite;
   }
 
   .gate__canvas {
@@ -144,6 +297,212 @@
     width: 100%;
     height: 100%;
     display: block;
+    animation: canvas-breathe 1.05s ease-in-out infinite;
+  }
+
+  .gate__hud {
+    position: absolute;
+    inset: 0;
+    pointer-events: none;
+    z-index: 9;
+    font-family: ui-monospace, monospace;
+    font-size: clamp(0.55rem, 1.6vw, 0.72rem);
+    color: #7af6ff;
+    text-shadow: 0 0 8px rgba(0, 240, 255, 0.9);
+  }
+
+  .gate__hud-block {
+    position: absolute;
+    display: flex;
+    flex-direction: column;
+    gap: 0.2rem;
+    padding: 0.55rem 0.7rem;
+    background: rgba(0, 0, 0, 0.45);
+    border: 1px solid rgba(0, 245, 255, 0.45);
+    animation: hud-flicker 1.4s steps(2) infinite;
+  }
+
+  .gate__hud-block--tl {
+    top: 2.5vmin;
+    left: 2.5vmin;
+  }
+
+  .gate__hud-block--tr {
+    top: 2.5vmin;
+    right: 2.5vmin;
+    align-items: flex-end;
+  }
+
+  .gate__hud-block--bl {
+    bottom: 2.5vmin;
+    left: 2.5vmin;
+  }
+
+  .gate__hud-block--br {
+    bottom: 2.5vmin;
+    right: 2.5vmin;
+    align-items: flex-end;
+  }
+
+  .gate__marquee {
+    position: absolute;
+    inset: 0;
+    pointer-events: none;
+    z-index: 1;
+    overflow: hidden;
+    opacity: 0.22;
+  }
+
+  .gate__marquee-track {
+    position: absolute;
+    left: 0;
+    width: 200%;
+    white-space: nowrap;
+    font-family: ui-monospace, monospace;
+    font-size: clamp(0.65rem, 2vw, 0.9rem);
+    letter-spacing: 0.35em;
+    color: #ff4fd8;
+    text-shadow: 0 0 10px rgba(255, 60, 200, 0.8);
+  }
+
+  .gate__marquee-track--forward {
+    top: 38%;
+    animation: marquee-forward 9s linear infinite;
+  }
+
+  .gate__marquee-track--reverse {
+    top: 62%;
+    animation: marquee-reverse 11s linear infinite;
+  }
+
+  .gate__trails {
+    position: absolute;
+    inset: 0;
+    pointer-events: none;
+    z-index: 3;
+  }
+
+  .gate__trail-dot {
+    position: absolute;
+    width: 10px;
+    height: 10px;
+    margin: -5px 0 0 -5px;
+    border-radius: 50%;
+    border: 1px solid rgba(0, 245, 255, 0.9);
+    box-shadow:
+      0 0 6px #00f0ff,
+      0 0 14px #ff3cc8;
+    transform: rotate(45deg);
+  }
+
+  .gate__trail-dot::before,
+  .gate__trail-dot::after {
+    content: '';
+    position: absolute;
+    background: rgba(255, 255, 255, 0.9);
+  }
+
+  .gate__trail-dot::before {
+    left: 50%;
+    top: -4px;
+    width: 1px;
+    height: 18px;
+    margin-left: -0.5px;
+  }
+
+  .gate__trail-dot::after {
+    top: 50%;
+    left: -4px;
+    height: 1px;
+    width: 18px;
+    margin-top: -0.5px;
+  }
+
+  .gate__fake-dialog {
+    position: absolute;
+    left: 4vmin;
+    bottom: 18vmin;
+    z-index: 10;
+    width: min(240px, 52vw);
+    padding: 0.35rem 0.5rem 0.55rem;
+    font-family: 'Tahoma', system-ui, sans-serif;
+    font-size: 0.72rem;
+    color: #000;
+    background: #c0c0c0;
+    border: 2px solid #fff;
+    outline: 1px solid #000;
+    box-shadow:
+      inset -1px -1px #0a0a0a,
+      inset 1px 1px #dfdfdf,
+      4px 4px 0 rgba(0, 0, 0, 0.45);
+    pointer-events: none;
+    animation: fake-dialog 5.5s steps(1) infinite;
+  }
+
+  .gate__fake-dialog-title {
+    margin: -0.35rem -0.5rem 0.4rem;
+    padding: 0.15rem 0.35rem;
+    background: linear-gradient(90deg, #000080, #1084d0);
+    color: #fff;
+    font-weight: 700;
+  }
+
+  .gate__fake-dialog p {
+    margin: 0 0 0.45rem;
+  }
+
+  .gate__fake-dialog-buttons {
+    display: flex;
+    justify-content: flex-end;
+    gap: 0.35rem;
+  }
+
+  .gate__fake-dialog-buttons span {
+    padding: 0.1rem 0.55rem;
+    background: #c0c0c0;
+    border: 2px solid #fff;
+    outline: 1px solid #000;
+    box-shadow: inset -1px -1px #0a0a0a;
+  }
+
+  .gate__fake-notify {
+    position: absolute;
+    top: 12vmin;
+    right: 4vmin;
+    z-index: 10;
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 0.35rem 0.5rem;
+    max-width: min(280px, 70vw);
+    padding: 0.45rem 0.55rem;
+    font-family: system-ui, sans-serif;
+    font-size: 0.68rem;
+    color: #e8f7ff;
+    background: rgba(8, 12, 24, 0.92);
+    border: 1px solid rgba(0, 245, 255, 0.55);
+    box-shadow: 0 0 18px rgba(0, 200, 255, 0.35);
+    pointer-events: none;
+    animation: fake-notify 7s ease-in-out infinite;
+  }
+
+  .gate__fake-notify-icon {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 1.1rem;
+    height: 1.1rem;
+    border-radius: 50%;
+    background: #ff4fd8;
+    color: #000;
+    font-weight: 800;
+  }
+
+  .gate__fake-notify-actions {
+    width: 100%;
+    text-align: right;
+    color: #7af6ff;
+    letter-spacing: 0.08em;
   }
 
   .gate__vignette {
@@ -197,7 +556,7 @@
     background:
       linear-gradient(90deg, rgba(255, 0, 140, 0.16), transparent 22%, transparent 78%, rgba(0, 255, 255, 0.16)),
       radial-gradient(circle at 50% 50%, rgba(120, 0, 255, 0.12), transparent 55%);
-    animation: chroma-pulse 1.4s ease-in-out infinite;
+    opacity: 0.72;
   }
 
   .gate__corners {
@@ -279,6 +638,7 @@
     color: inherit;
     cursor: pointer;
     z-index: 2;
+    animation: button-throb 0.52s ease-in-out infinite;
   }
 
   .gate__halo {
@@ -355,6 +715,17 @@
       inset 0 0 28px rgba(0, 220, 255, 0.25);
     animation-direction: reverse;
     animation-duration: 1.5s;
+  }
+
+  .gate__ring--hyper {
+    width: min(52vmin, 380px);
+    height: min(52vmin, 380px);
+    border: 3px dotted rgba(255, 255, 255, 0.95);
+    box-shadow:
+      0 0 30px rgba(255, 255, 255, 0.65),
+      0 0 50px rgba(0, 240, 255, 0.45);
+    animation: spin 0.85s linear infinite reverse;
+    opacity: 0.9;
   }
 
   .gate__orbit {
@@ -471,16 +842,6 @@
     }
   }
 
-  @keyframes chroma-pulse {
-    0%,
-    100% {
-      opacity: 0.45;
-    }
-    50% {
-      opacity: 1;
-    }
-  }
-
   @keyframes corner-glow {
     0%,
     100% {
@@ -508,10 +869,10 @@
     background: radial-gradient(ellipse at center, rgba(0, 0, 8, 0.72) 0%, rgba(0, 0, 8, 0.28) 62%, transparent 78%);
     transform:
       perspective(680px)
-      translate3d(calc(var(--pointer-x) * 46px), calc(var(--pointer-y) * 28px), 0)
-      rotateX(calc(var(--pointer-y) * 16deg))
-      rotateY(calc(var(--pointer-x) * -22deg))
-      rotateZ(calc(var(--pointer-x) * -6deg));
+      translate3d(calc(var(--pointer-x) * -52px), calc(var(--pointer-y) * -34px), 0)
+      rotateX(calc(var(--pointer-y) * -20deg))
+      rotateY(calc(var(--pointer-x) * 26deg))
+      rotateZ(calc(var(--pointer-x) * 9deg));
     transform-origin: center center;
     transform-style: preserve-3d;
   }
@@ -699,7 +1060,107 @@
     }
   }
 
+  @keyframes gate-shake {
+    0%,
+    88%,
+    100% {
+      transform: translate(0, 0);
+    }
+    90% {
+      transform: translate(-2px, 1px);
+    }
+    92% {
+      transform: translate(3px, -2px);
+    }
+    94% {
+      transform: translate(-1px, 2px);
+    }
+  }
+
+  @keyframes canvas-breathe {
+    0%,
+    100% {
+      transform: scale(1);
+    }
+    50% {
+      transform: scale(1.045);
+    }
+  }
+
+  @keyframes hud-flicker {
+    0%,
+    100% {
+      opacity: 0.75;
+    }
+    50% {
+      opacity: 1;
+    }
+  }
+
+  @keyframes marquee-forward {
+    0% {
+      transform: translateX(0);
+    }
+    100% {
+      transform: translateX(-50%);
+    }
+  }
+
+  @keyframes marquee-reverse {
+    0% {
+      transform: translateX(-50%);
+    }
+    100% {
+      transform: translateX(0);
+    }
+  }
+
+  @keyframes fake-dialog {
+    0%,
+    18%,
+    100% {
+      opacity: 0;
+      transform: translateY(8px) scale(0.96);
+    }
+    22%,
+    38% {
+      opacity: 1;
+      transform: translateY(0) scale(1);
+    }
+  }
+
+  @keyframes fake-notify {
+    0%,
+    12%,
+    100% {
+      opacity: 0;
+      transform: translateX(12px);
+    }
+    18%,
+    42% {
+      opacity: 1;
+      transform: translateX(0);
+    }
+  }
+
+  @keyframes button-throb {
+    0%,
+    100% {
+      transform: scale(1);
+    }
+    50% {
+      transform: scale(1.06);
+    }
+  }
+
   @media (prefers-reduced-motion: reduce) {
+    .gate,
+    .gate__canvas,
+    .gate__button,
+    .gate__hud-block,
+    .gate__marquee-track,
+    .gate__fake-dialog,
+    .gate__fake-notify,
     .gate__noise,
     .gate__ring,
     .gate__halo,
