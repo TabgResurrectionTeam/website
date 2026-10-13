@@ -285,9 +285,19 @@
             We use cookies and similar technologies to help personalize content, tailor and measure ads,
             and provide a better experience. By clicking <strong>Accept All</strong>, you agree to this
             as outlined in our
-            <span class="gate__cookie-link">Cookie Policy</span>
+            <a
+              class="gate__cookie-link"
+              href="https://www.palantir.com/cookie-statement/"
+              target="_blank"
+              rel="noopener noreferrer"
+            >Cookie Policy</a>
             and
-            <span class="gate__cookie-link">Privacy Policy</span>.
+            <a
+              class="gate__cookie-link"
+              href="https://www.palantir.com/privacy-and-security/"
+              target="_blank"
+              rel="noopener noreferrer"
+            >Privacy Policy</a>.
           </p>
         </div>
         <div class="gate__cookie-actions">
@@ -638,7 +648,7 @@
     color: #0066cc;
     text-decoration: underline;
     text-underline-offset: 2px;
-    cursor: default;
+    cursor: pointer;
   }
 
   .gate__cookie-actions {
