@@ -77,12 +77,34 @@ const LANDSCAPE_MAX_IMAGE_DISPLAY_WIDTH_PX = 240
 const PLACEMENT_ATTEMPTS = 24
 const PLACEMENT_PADDING_PX = 10
 
-export function pickRandomAdPopupImageUrl(imageUrls: readonly string[]): string | null {
-  if (imageUrls.length === 0) {
-    return null
+function shuffleArrayInPlace<T>(items: T[]): void {
+  for (let index = items.length - 1; index > 0; index -= 1) {
+    const swapIndex = Math.floor(Math.random() * (index + 1))
+    const temporary = items[index]
+    items[index] = items[swapIndex]
+    items[swapIndex] = temporary
   }
-  const index = Math.floor(Math.random() * imageUrls.length)
-  return imageUrls[index] ?? null
+}
+
+/** Picks each URL once per cycle (shuffled), then reshuffles and repeats. */
+export function createAdPopupImageUrlPicker(imageUrls: readonly string[]): () => string | null {
+  let remainingUrls: string[] = []
+
+  function refillRemainingUrls(): void {
+    remainingUrls = [...imageUrls]
+    shuffleArrayInPlace(remainingUrls)
+  }
+
+  return (): string | null => {
+    if (imageUrls.length === 0) {
+      return null
+    }
+    if (remainingUrls.length === 0) {
+      refillRemainingUrls()
+    }
+    const nextUrl = remainingUrls.pop()
+    return nextUrl ?? null
+  }
 }
 
 export function pickAdPopupSkinForImageLayout(imageLayout: AdPopupImageLayout): AdPopupSkin {

@@ -6,7 +6,7 @@
     estimateAdPopupHeight,
     estimateAdPopupWidth,
     loadAdPopupImageSize,
-    pickRandomAdPopupImageUrl,
+    createAdPopupImageUrlPicker,
     pickAdPopupSkinForImageLayout,
     pickRandomAdPopupPlacement,
     pickImageDisplayWidth,
@@ -19,6 +19,8 @@
 
   let { onenter }: Props = $props()
 
+  const pickAdPopupImageUrl = createAdPopupImageUrlPicker(CLICK_TO_ENTER_AD_POPUP_IMAGE_URLS)
+
   const INITIAL_DELAY_MS = 1400
   const SPAWN_INTERVAL_MIN_MS = 3200
   const SPAWN_INTERVAL_MAX_MS = 6200
@@ -28,7 +30,7 @@
   let spawnGeneration = 0
 
   async function spawnPopup(): Promise<void> {
-    const imageUrl = pickRandomAdPopupImageUrl(CLICK_TO_ENTER_AD_POPUP_IMAGE_URLS)
+    const imageUrl = pickAdPopupImageUrl()
     if (imageUrl === null) {
       return
     }
