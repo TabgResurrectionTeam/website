@@ -12,6 +12,13 @@
     opacity: number
   }
 
+  interface CookieBannerLayer {
+    id: number
+    bottomOffsetPx: number
+  }
+
+  const COOKIE_REJECT_STACK_STEP_PX = 50
+
   const LABEL_TEXT = 'CLICK TO ENTER'
   const SCRAMBLE_CHARS = '█▓▒░01XØΔ'
   const TRAIL_DOT_COUNT = 14
@@ -41,6 +48,8 @@
   )
   let lastTrailPushTime = 0
   let loadingStatusText = $state(LOADING_STATUS_MESSAGES[0])
+  let cookieBannerLayers: CookieBannerLayer[] = $state([{ id: 0, bottomOffsetPx: 0 }])
+  let nextCookieBannerId = 1
 
   $effect(() => {
     const canvas = canvasElement
@@ -181,6 +190,19 @@
     scene?.setPointer(0.5, 0.5)
   }
 
+  function handleCookieReject(layer: CookieBannerLayer, event: MouseEvent): void {
+    event.stopPropagation()
+    event.preventDefault()
+    cookieBannerLayers = [
+      ...cookieBannerLayers,
+      {
+        id: nextCookieBannerId,
+        bottomOffsetPx: layer.bottomOffsetPx + COOKIE_REJECT_STACK_STEP_PX,
+      },
+    ]
+    nextCookieBannerId += 1
+  }
+
 </script>
 
 <div
@@ -249,26 +271,39 @@
     <span class="gate__fake-notify-actions">Block · Allow</span>
   </div>
 
-  <div class="gate__cookie" aria-hidden="true">
-    <div class="gate__cookie-inner">
-      <div class="gate__cookie-copy">
-        <p class="gate__cookie-title">We value your privacy</p>
-        <p class="gate__cookie-body">
-          We use cookies and similar technologies to help personalize content, tailor and measure ads,
-          and provide a better experience. By clicking <strong>Accept All</strong>, you agree to this
-          as outlined in our
-          <span class="gate__cookie-link">Cookie Policy</span>
-          and
-          <span class="gate__cookie-link">Privacy Policy</span>.
-        </p>
-      </div>
-      <div class="gate__cookie-actions">
-        <span class="gate__cookie-btn gate__cookie-btn--secondary">Customize</span>
-        <span class="gate__cookie-btn gate__cookie-btn--secondary">Reject All</span>
-        <span class="gate__cookie-btn gate__cookie-btn--primary">Accept All</span>
+  {#each cookieBannerLayers as layer (layer.id)}
+    <div
+      class="gate__cookie"
+      style:bottom="{layer.bottomOffsetPx}px"
+      style:z-index={11 + layer.id}
+      aria-hidden="true"
+    >
+      <div class="gate__cookie-inner">
+        <div class="gate__cookie-copy">
+          <p class="gate__cookie-title">We value your privacy</p>
+          <p class="gate__cookie-body">
+            We use cookies and similar technologies to help personalize content, tailor and measure ads,
+            and provide a better experience. By clicking <strong>Accept All</strong>, you agree to this
+            as outlined in our
+            <span class="gate__cookie-link">Cookie Policy</span>
+            and
+            <span class="gate__cookie-link">Privacy Policy</span>.
+          </p>
+        </div>
+        <div class="gate__cookie-actions">
+          <span class="gate__cookie-btn gate__cookie-btn--secondary">Customize</span>
+          <button
+            type="button"
+            class="gate__cookie-btn gate__cookie-btn--secondary gate__cookie-btn--reject"
+            onclick={(event) => handleCookieReject(layer, event)}
+          >
+            Reject All
+          </button>
+          <span class="gate__cookie-btn gate__cookie-btn--primary">Accept All</span>
+        </div>
       </div>
     </div>
-  </div>
+  {/each}
 
   <div class="gate__vignette" aria-hidden="true"></div>
   <div class="gate__scanlines" aria-hidden="true"></div>
@@ -553,7 +588,7 @@
     background: #fff;
     border-top: 1px solid #e5e5e5;
     box-shadow: 0 -4px 24px rgba(0, 0, 0, 0.12);
-    pointer-events: none;
+    pointer-events: auto;
     font-family:
       -apple-system,
       BlinkMacSystemFont,
@@ -638,6 +673,12 @@
     background: #2e7d32;
     border: 1px solid #2e7d32;
     box-shadow: 0 1px 2px rgba(0, 0, 0, 0.08);
+  }
+
+  .gate__cookie-btn--reject {
+    margin: 0;
+    font: inherit;
+    cursor: pointer;
   }
 
   .gate__load {
