@@ -2,7 +2,7 @@ import fs from 'node:fs'
 import path from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { svelte } from '@sveltejs/vite-plugin-svelte'
-import { defineConfig, type Plugin } from 'vite'
+import { defineConfig, loadEnv, type Plugin } from 'vite'
 
 const projectRoot = path.dirname(fileURLToPath(import.meta.url))
 const adPopupDirectory = path.join(projectRoot, 'public', 'ad-popups')
@@ -59,7 +59,36 @@ function clickToEnterAdPopupImagesPlugin(): Plugin {
   }
 }
 
+const discordEmbedMetaPlaceholder = '<!-- discord-embed-meta -->'
+
+function discordEmbedMetaPlugin(siteUrl: string): Plugin {
+  return {
+    name: 'discord-embed-meta',
+    transformIndexHtml(html) {
+      const normalizedSiteUrl = siteUrl.replace(/\/$/, '')
+      if (normalizedSiteUrl.length === 0) {
+        return html
+      }
+
+      const embedImageUrl = `${normalizedSiteUrl}/discord-embed.png`
+      const metaTags = [
+        `<meta property="og:url" content="${normalizedSiteUrl}/" />`,
+        `<meta property="og:image" content="${embedImageUrl}" />`,
+        `<meta property="og:image:type" content="image/png" />`,
+        `<meta name="twitter:image" content="${embedImageUrl}" />`,
+      ].join('\n    ')
+
+      return html.replace(discordEmbedMetaPlaceholder, metaTags)
+    },
+  }
+}
+
 // https://vite.dev/config/
-export default defineConfig({
-  plugins: [svelte(), clickToEnterAdPopupImagesPlugin()],
+export default defineConfig(({ mode }) => {
+  const env = loadEnv(mode, projectRoot, '')
+  const siteUrl = env.VITE_SITE_URL ?? 'https://tabghacks.net'
+
+  return {
+    plugins: [svelte(), clickToEnterAdPopupImagesPlugin(), discordEmbedMetaPlugin(siteUrl)],
+  }
 })
