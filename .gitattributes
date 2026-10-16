@@ -1,0 +1,2 @@
+# handle text files automatically and force LF on checkout
+* text=auto eol=lf
