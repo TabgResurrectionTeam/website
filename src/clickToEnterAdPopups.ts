@@ -23,7 +23,7 @@ export interface PlacedAdPopup {
 	imageLayout: AdPopupImageLayout
 }
 
-export const CLICK_TO_ENTER_AD_POPUP_FOLDER = '/ad-popups'
+export const CLICK_TO_ENTER_AD_POPUP_FOLDER = `${import.meta.env.BASE_URL}ad-popups`
 
 const AD_HEADLINES = [
 	'CONGRATULATIONS! You Are Today\'s Lucky Visitor!',

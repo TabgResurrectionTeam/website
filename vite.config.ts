@@ -10,7 +10,7 @@ const adPopupVirtualModuleId = 'virtual:click-to-enter-ad-images'
 const adPopupResolvedVirtualModuleId = '\0' + adPopupVirtualModuleId
 const adPopupImagePattern = /\.(png|jpe?g|webp|gif|svg)$/i
 
-function listClickToEnterAdPopupImageUrls(): string[] {
+function listClickToEnterAdPopupImageUrls(assetBase: string): string[] {
   if (!fs.existsSync(adPopupDirectory)) {
     return []
   }
@@ -19,14 +19,14 @@ function listClickToEnterAdPopupImageUrls(): string[] {
     .readdirSync(adPopupDirectory)
     .filter((fileName) => adPopupImagePattern.test(fileName))
     .sort((left, right) => left.localeCompare(right))
-    .map((fileName) => `/ad-popups/${fileName}`)
+    .map((fileName) => `${assetBase}ad-popups/${fileName}`)
 }
 
-function clickToEnterAdPopupImagesPlugin(): Plugin {
+function clickToEnterAdPopupImagesPlugin(assetBase: string): Plugin {
   let server: import('vite').ViteDevServer | undefined
 
   function emitVirtualModule(): string {
-    const imageUrls = listClickToEnterAdPopupImageUrls()
+    const imageUrls = listClickToEnterAdPopupImageUrls(assetBase)
     return `export const CLICK_TO_ENTER_AD_POPUP_IMAGE_URLS = ${JSON.stringify(imageUrls)};\n`
   }
 
@@ -88,8 +88,10 @@ export default defineConfig(({ mode }) => {
   const env = loadEnv(mode, projectRoot, '')
   const siteUrl = env.VITE_SITE_URL ?? 'https://tabghacks.net'
 
+  const assetBase = './'
+
   return {
-    base: '/',
-    plugins: [svelte(), clickToEnterAdPopupImagesPlugin(), discordEmbedMetaPlugin(siteUrl)],
+    base: assetBase,
+    plugins: [svelte(), clickToEnterAdPopupImagesPlugin(assetBase), discordEmbedMetaPlugin(siteUrl)],
   }
 })

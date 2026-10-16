@@ -43,4 +43,4 @@
 	<ClickToEnter onenter={handleEnter} />
 {/if}
 
-<audio bind:this={song} src="/song.mp3" loop></audio>
+<audio bind:this={song} src="{import.meta.env.BASE_URL}song.mp3" loop></audio>
