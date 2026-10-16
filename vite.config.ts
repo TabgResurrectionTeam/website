@@ -89,6 +89,7 @@ export default defineConfig(({ mode }) => {
   const siteUrl = env.VITE_SITE_URL ?? 'https://tabghacks.net'
 
   return {
+    base: '/',
     plugins: [svelte(), clickToEnterAdPopupImagesPlugin(), discordEmbedMetaPlugin(siteUrl)],
   }
 })
